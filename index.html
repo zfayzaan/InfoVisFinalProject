@@ -5,17 +5,38 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-
-    <!-- import D3 Version 6 here or at the end of the body -->
+    <title>Social Media and NBA Performance</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.7.0/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/noframework.waypoints.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="./visualization.js"></script>
     <link rel="stylesheet" href="./style.css">
-    
   </head>
   <body>
+    <header>
+      <h1>Social Media and NBA Performance</h1>
+    </header>
+    
+    <div class="container">
+      <div class="sidebar left-sidebar"></div>
+      
+      <main class="content">
+        <div class="logo-container">
+          <img src="./imgs/nbalogo.png" alt="NBA Logo" class="nba-logo">
+        </div>
+        
+        <div id="visualization-container">
+          <!-- jawn for our visualizations -->
+        </div>
+      </main>
+      
+      <div class="sidebar right-sidebar"></div>
+    </div>
+    
+    <footer>
+      <p>Fayzaan Awan, Zach V. Jones, Josh Varkey, and Jon Hamilton</p>
+    </footer>
 
+    <script src="./visualization.js"></script>
   </body>
-
 </html>
