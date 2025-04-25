@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Visualization.js loaded successfully');
+    console.log('totalPoints.js loaded successfully');
     
-    const visualizationContainer = d3.select('#visualization-container')
+    const visualizationContainer = d3.select('#visualization-totalPoints')
       .classed('full-width-viz', true)
       .style('width', '100%')
       .style('overflow-x', 'auto'); // Add horizontal scrolling if needed
