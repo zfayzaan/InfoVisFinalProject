@@ -14,11 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
         d.Date = new Date(d.Date);
       });
       
-      // Filter to only include game data (rows with game points)
       const gameData = data.filter(d => !isNaN(d["Game Points:"]) && d["Game Points:"] > 0);
       
       createGoogleTrendsVisualization(data, gameData);
     }).catch(error => {
+      // error handling blah
       console.error("Error loading CSV:", error);
       visualizationContainer.html(`
         <div class="alert alert-danger">
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       vizCard.append('h3')
         .attr('class', 'card-title text-center mb-4')
-        .html('<i class="fas fa-basketball-ball me-2"></i>Jared McCain: Google Search Interest vs. Game Performance');
+        .html('<i class="fas fa-basketball-ball me-2"></i>Jared McCain: Google Search Interest (10/16-12/13) vs. Game Performance');
       
       const chartContainer = vizCard.append('div')
         .attr('class', 'chart-container')
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .attr('text-anchor', 'middle')
         .style('font-size', '0.875rem')
         .text('Points Scored');
-      
+      //grid lines
       svg.append('g')
         .attr('class', 'grid-lines')
         .selectAll('line')
@@ -154,7 +154,11 @@ document.addEventListener('DOMContentLoaded', function() {
         .attr('class', 'game-circle')
         .attr('cx', d => xScale(d.Date))
         .attr('cy', d => yScalePoints(d["Game Points:"]))
-        .attr('r', 6)
+        .attr('r', d => {
+          // career high
+          const highestPoints = d3.max(gameData, d => d["Game Points:"]);
+          return d["Game Points:"] === highestPoints ? 8 : 6;
+        })
         .attr('fill', '#ED174C')
         .attr('stroke', 'white')
         .attr('stroke-width', 1.5)
@@ -162,29 +166,43 @@ document.addEventListener('DOMContentLoaded', function() {
           const dateFormat = d3.timeFormat("%B %d, %Y");
           const formattedDate = dateFormat(d.Date);
           
+          const highestPoints = d3.max(gameData, d => d["Game Points:"]);
+          const isCareerHigh = d["Game Points:"] === highestPoints;
+          
+          const highestInterest = d3.max(gameData, d => d["Interest Score"]);
+          const isHighestInterest = d["Interest Score"] === highestInterest;
+          
+          let tooltipContent = `
+            <strong>Game Date: ${formattedDate}</strong><br>
+            Points Scored: ${d["Game Points:"]}${isCareerHigh ? ' (Career High)' : ''}<br>
+            Google Interest: ${d["Interest Score"]}${isHighestInterest ? ' (Highest)' : ''}<br>
+            Week Avg Interest: ${d["Week Average"].toFixed(1)}
+          `;
+          
           tooltip.style('display', 'block')
-            .html(`
-              <strong>Game Date: ${formattedDate}</strong><br>
-              Points Scored: ${d["Game Points:"]}<br>
-              Google Interest: ${d["Interest Score"]}<br>
-              Week Avg Interest: ${d["Week Average"].toFixed(1)}
-            `)
+            .html(tooltipContent)
             .style('left', (event.pageX + 10) + 'px')
             .style('top', (event.pageY - 20) + 'px');
           
           d3.select(this)
             .transition()
             .duration(200)
-            .attr('r', 9)
+            .attr('r', d => {
+              const highestPoints = d3.max(gameData, d => d["Game Points:"]);
+              return d["Game Points:"] === highestPoints ? 10 : 8;
+            })
             .attr('stroke-width', 2);
         })
-        .on('mouseout', function() {
+        .on('mouseout', function(d) {
           tooltip.style('display', 'none');
           
           d3.select(this)
             .transition()
             .duration(200)
-            .attr('r', 6)
+            .attr('r', d => {
+              const highestPoints = d3.max(gameData, d => d["Game Points:"]);
+              return d._current && d._current["Game Points:"] === highestPoints ? 8 : 6;
+            })
             .attr('stroke-width', 1.5);
         });
       
@@ -200,38 +218,13 @@ document.addEventListener('DOMContentLoaded', function() {
           [width, 0]
         ]));
       
-      const importantGames = gameData.filter(d => d["Game Points:"] >= 25);
-      
-      svg.selectAll('.point-label')
-        .data(importantGames)
-        .enter()
-        .append('text')
-        .attr('class', 'point-label')
-        .attr('x', d => xScale(d.Date))
-        .attr('y', d => yScalePoints(d["Game Points:"]) - 12)
-        .attr('text-anchor', 'middle')
-        .style('font-size', '0.7rem')
-        .style('font-weight', 'bold')
-        .style('fill', '#ED174C')
-        .text(d => d["Game Points:"]);
-      
-      const avgInterest = d3.mean(gameData, d => d["Interest Score"]);
-      const avgPoints = d3.mean(gameData, d => d["Game Points:"]);
-      
+      // Calculate correlation coefficient
       const correlation = calculateCorrelation(
         gameData.map(d => d["Interest Score"]), 
         gameData.map(d => d["Game Points:"])
       );
       
-      svg.append('text')
-        .attr('x', width - 300)
-        .attr('y', 30)
-        .attr('text-anchor', 'start')
-        .style('font-size', '0.875rem')
-        .style('font-weight', 'bold')
-        .text(`Correlation: ${correlation.toFixed(2)}`);
-      
-      // Add annotation explaining correlation
+      // correlation description
       let correlationDescription = "No clear relationship";
       if (correlation >= 0.5) {
         correlationDescription = "Strong positive relationship";
@@ -249,16 +242,24 @@ document.addEventListener('DOMContentLoaded', function() {
       
       svg.append('text')
         .attr('x', width - 300)
+        .attr('y', 30)
+        .attr('text-anchor', 'start')
+        .style('font-size', '0.875rem')
+        .style('font-weight', 'bold')
+        .text(`Correlation: ${correlation.toFixed(2)}`);
+      
+      svg.append('text')
+        .attr('x', width - 300)
         .attr('y', 50)
         .attr('text-anchor', 'start')
         .style('font-size', '0.8rem')
         .text(correlationDescription);
       
+      // legend stuff
       const legend = svg.append('g')
         .attr('class', 'legend')
         .attr('transform', `translate(${width / 2 - 150}, ${height + 70})`);
-      
-      // Interest score legend
+
       legend.append('line')
         .attr('x1', 0)
         .attr('y1', 0)
@@ -273,9 +274,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .text('Google Interest Score')
         .style('font-size', '0.8rem');
       
-      // Game points legend
       legend.append('circle')
-        .attr('cx', 180)
+        .attr('cx', 200)
         .attr('cy', 0)
         .attr('r', 6)
         .attr('fill', '#ED174C')
@@ -283,61 +283,12 @@ document.addEventListener('DOMContentLoaded', function() {
         .attr('stroke-width', 1.5);
       
       legend.append('text')
-        .attr('x', 195)
+        .attr('x', 215)
         .attr('y', 4)
         .text('Points Scored')
         .style('font-size', '0.8rem');
-      
-      // Add annotation for highest interest game
-      const highestInterestGame = d3.max(gameData, d => d["Interest Score"]);
-      const highestInterestGameData = gameData.find(d => d["Interest Score"] === highestInterestGame);
-      
-      if (highestInterestGameData) {
-        svg.append('circle')
-          .attr('cx', xScale(highestInterestGameData.Date))
-          .attr('cy', yScaleInterest(highestInterestGameData["Interest Score"]))
-          .attr('r', 8)
-          .attr('fill', 'none')
-          .attr('stroke', '#006BB6')
-          .attr('stroke-width', 2)
-          .attr('stroke-dasharray', '3,3');
-        
-        svg.append('text')
-          .attr('x', xScale(highestInterestGameData.Date) + 15)
-          .attr('y', yScaleInterest(highestInterestGameData["Interest Score"]) - 10)
-          .attr('text-anchor', 'start')
-          .style('font-size', '0.7rem')
-          .style('font-weight', 'bold')
-          .style('fill', '#006BB6')
-          .text('Highest Interest');
-      }
-      
-      // Add annotation for highest scoring game
-      const highestPointsGame = d3.max(gameData, d => d["Game Points:"]);
-      const highestPointsGameData = gameData.find(d => d["Game Points:"] === highestPointsGame);
-      
-      if (highestPointsGameData) {
-        svg.append('circle')
-          .attr('cx', xScale(highestPointsGameData.Date))
-          .attr('cy', yScalePoints(highestPointsGameData["Game Points:"]))
-          .attr('r', 8)
-          .attr('fill', 'none')
-          .attr('stroke', '#ED174C')
-          .attr('stroke-width', 2)
-          .attr('stroke-dasharray', '3,3');
-        
-        svg.append('text')
-          .attr('x', xScale(highestPointsGameData.Date) + 15)
-          .attr('y', yScalePoints(highestPointsGameData["Game Points:"]) - 10)
-          .attr('text-anchor', 'start')
-          .style('font-size', '0.7rem')
-          .style('font-weight', 'bold')
-          .style('fill', '#ED174C')
-          .text('Career High');
-      }
     }
     
-    // correlation coefficient calculator (ripped from a random stack overflow thing)
     function calculateCorrelation(x, y) {
       const n = x.length;
       let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
