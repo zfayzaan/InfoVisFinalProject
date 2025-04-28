@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('fgVis.js loaded successfully');
     
-    const visualizationContainer = d3.select('#visualization-container')
+    const visualizationContainer = d3.select('#visualization-fg')
       .classed('full-width-viz', true)
       .style('width', '100%')
       .style('overflow-x', 'auto');
