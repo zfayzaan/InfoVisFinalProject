@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
       correlationColor = "#f8d7da"; // Very light red for weak negative
     }
     
-    // Create invisible area to make hover easier
+    // invisible area to get interactiveness working
     const correlationLineArea = svg.append('rect')
       .attr('class', 'correlation-line-hover-area')
       .attr('x', 0)
@@ -270,10 +270,9 @@ document.addEventListener('DOMContentLoaded', function() {
       .attr('fill', 'transparent')
       .style('pointer-events', 'none'); // initially not interactive
     
-    // Create reference/correlation line (initially hidden if correlation <= 0)
     const referenceLine = svg.append('path')
       .attr('class', 'reference-line')
-      .attr('stroke', correlation > 0 ? correlationColor : '#333') // Colored based on correlation if positive
+      .attr('stroke', correlation > 0 ? correlationColor : '#333') 
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', '5,5')
       .attr('opacity', 0.7)
@@ -283,11 +282,11 @@ document.addEventListener('DOMContentLoaded', function() {
         [width, 0]
       ]));
     
-    // Make the correlation line interactive
+    // correlation hovering stuff
     const referenceLineInteractive = svg.append('path')
       .attr('class', 'reference-line-interactive')
       .attr('stroke', 'transparent')
-      .attr('stroke-width', 15) // Wider for easier hovering
+      .attr('stroke-width', 15) 
       .attr('fill', 'none')
       .attr('d', d3.line()([
         [0, height],
