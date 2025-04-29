@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     vizCard.append('h3')
       .attr('class', 'card-title text-center mb-4')
-      .html('<i class="fas fa-basketball-ball me-2"></i>Jared McCain: Game Points vs. TikTok Activity');
+      .html('<i class="fas fa-basketball-ball me-2"></i>Jared McCain: Game Points vs. TikTok Activity (# tiktoks posted a week before game date, including game date)');
     
     // subtitle for instructions
     vizCard.append('p')
