@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     .style('width', '100%')
     .style('overflow-x', 'auto');
   
-  d3.csv("JaredTiktokTrends.csv").then(function(data) {
+  d3.csv("JaredTikTokTrends.csv").then(function(data) {
     data.forEach(d => {
       d.POINTS = +d.POINTS;
       d['# TIK-TOKS'] = +d['# TIK-TOKS'];
