@@ -292,3 +292,75 @@ svg {
   background-color: #f0f0f0;
   border-radius: 0.25rem;
 }
+.full-width-viz {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 1.875rem;
+  scrollbar-width: thin;
+  scrollbar-color: #002B5C #f0f0f0;
+}
+
+.chart-container {
+  min-width: 75rem;
+  position: relative;
+  max-width: 100%;
+}
+
+.basketball {
+  transition: transform 0.2s ease, opacity 0.3s ease;
+}
+
+.player-label {
+  transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.name-bg, .points-bg {
+  transition: opacity 0.3s ease;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.basketball-tooltip {
+  z-index: 1000;
+  font-family: 'Montserrat', sans-serif;
+  transition: opacity 0.2s ease;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 1200px) {
+  .full-width-viz {
+    padding-bottom: 0.625rem;
+  }
+  
+  /* Ensure horizontal scrolling is obvious */
+  .chart-container::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 0.75rem;
+    height: 3.125rem;
+    background-color: rgba(0, 43, 92, 0.1);
+    border-radius: 0.375rem 0 0 0.375rem;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+}
+
+/* Improved scrollbar appearance */
+.full-width-viz::-webkit-scrollbar {
+  height: 0.5rem;
+}
+
+.full-width-viz::-webkit-scrollbar-thumb {
+  background-color: #002B5C;
+  border-radius: 0.25rem;
+}
+
+.full-width-viz::-webkit-scrollbar-track {
+  background-color: #f0f0f0;
+  border-radius: 0.25rem;
+}
