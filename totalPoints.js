@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     data.forEach(d => {
       d["Total points"] = +d["Total points"];
       d["Games Played"] = +d["Games Played"];
+      d.originalX = d["Total points"];
     });
     
     createBasketballVisualization(data);
@@ -32,9 +33,38 @@ document.addEventListener('DOMContentLoaded', function() {
       .attr('class', 'card shadow p-3 mb-5 bg-white rounded fade-in')
       .style('min-width', vizWidth + 'px');
     
-    vizCard.append('h3')
-      .attr('class', 'card-title text-center mb-4')
+    const titleSection = vizCard.append('div')
+      .attr('class', 'd-flex justify-content-between align-items-center mb-4');
+      
+    titleSection.append('h3')
+      .attr('class', 'card-title m-0')
       .html('<i class="fas fa-basketball-ball me-2"></i>NBA Rookies - Total Points in Rookie Season');
+    
+    const controlsSection = titleSection.append('div')
+      .attr('class', 'controls');
+    
+    const resetBtn = controlsSection.append('button')
+      .attr('class', 'btn btn-outline-primary btn-sm reset-btn')
+      .html('<i class="fas fa-undo me-1"></i>Reset Positions')
+      .style('display', 'none'); 
+      
+    const modeToggle = controlsSection.append('div')
+      .attr('class', 'form-check form-switch ms-2 d-inline-block');
+      
+    modeToggle.append('input')
+      .attr('class', 'form-check-input')
+      .attr('type', 'checkbox')
+      .attr('id', 'dragModeToggle');
+      
+    modeToggle.append('label')
+      .attr('class', 'form-check-label ms-1')
+      .attr('for', 'dragModeToggle')
+      .text('Comparison Mode');
+    
+    const instructionText = controlsSection.append('span')
+      .attr('class', 'ms-2 text-muted drag-instructions')
+      .text('Drag basketballs to compare players')
+      .style('display', 'none');
     
     const chartContainer = vizCard.append('div')
       .attr('class', 'chart-container');
@@ -101,18 +131,26 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       rowAssignment.push(row);
+      data[i].row = row;
     }
     
     const basketballsLayer = svg.append('g').attr('class', 'basketballs-layer');
+    
+    const comparisonArea = svg.append('g')
+      .attr('class', 'comparison-area')
+      .attr('transform', `translate(${width / 2}, ${height * 0.1})`);
     
     const playerGroups = basketballsLayer.selectAll('.player-group')
       .data(data)
       .enter()
       .append('g')
       .attr('class', 'player-group')
+      .attr('id', (d, i) => `player-${i}`)
       .attr('transform', (d, i) => {
         const yPos = (rowAssignment[i] + 1) * (height / 5);
-        return `translate(${xScale(d["Total points"])}, ${yPos})`;
+        d.x = xScale(d["Total points"]); 
+        d.y = yPos; 
+        return `translate(${d.x}, ${d.y})`;
       });
     
     function drawBasketball(selection, size) {
@@ -122,21 +160,20 @@ document.addEventListener('DOMContentLoaded', function() {
         .attr('r', size)
         .attr('fill', ballColor)
         .attr('stroke', '#000')
-        .attr('stroke-width', 1);
+        .attr('stroke-width', 1)
+        .attr('class', 'basketball-circle');
       
       selection.append('path')
-        .attr('d', d => {
-          return `M ${-size} 0 H ${size}`;
-        })
+        .attr('d', d => `M ${-size} 0 H ${size}`)
         .attr('stroke', '#000')
-        .attr('stroke-width', 1.5);
+        .attr('stroke-width', 1.5)
+        .attr('class', 'basketball-line');
       
       selection.append('path')
-        .attr('d', d => {
-          return `M 0 ${-size} V ${size}`;
-        })
+        .attr('d', d => `M 0 ${-size} V ${size}`)
         .attr('stroke', '#000')
-        .attr('stroke-width', 1.5);
+        .attr('stroke-width', 1.5)
+        .attr('class', 'basketball-line');
       
       selection.append('path')
         .attr('d', d => {
@@ -145,7 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .attr('fill', 'none')
         .attr('stroke', '#000')
-        .attr('stroke-width', 1.5);
+        .attr('stroke-width', 1.5)
+        .attr('class', 'basketball-curve');
       
       selection.append('path')
         .attr('d', d => {
@@ -154,7 +192,8 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .attr('fill', 'none')
         .attr('stroke', '#000')
-        .attr('stroke-width', 1.5);
+        .attr('stroke-width', 1.5)
+        .attr('class', 'basketball-curve');
     }
     
     const labelsLayer = svg.append('g')
@@ -174,6 +213,25 @@ document.addEventListener('DOMContentLoaded', function() {
       .style('max-width', '250px')
       .style('font-size', '14px');
     
+    const comparisonTooltip = d3.select('body').append('div')
+      .attr('class', 'comparison-tooltip')
+      .style('position', 'absolute')
+      .style('display', 'none')
+      .style('background-color', 'rgba(0, 43, 92, 0.95)')
+      .style('color', 'white')
+      .style('padding', '15px')
+      .style('border-radius', '5px')
+      .style('box-shadow', '0 8px 16px rgba(0,0,0,0.3)')
+      .style('pointer-events', 'none')
+      .style('z-index', 1000)
+      .style('max-width', '350px')
+      .style('font-size', '14px');
+    
+    const drag = d3.drag()
+      .on('start', dragStarted)
+      .on('drag', dragging)
+      .on('end', dragEnded);
+    
     playerGroups.each(function(d, i) {
       const group = d3.select(this);
       const size = sizeScale(d["Total points"]);
@@ -181,6 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const basketball = group.append('g')
         .attr('class', 'basketball')
         .attr('data-index', i)
+        .attr('data-player', d["Player Name"])
         .style('cursor', 'pointer');
       
       drawBasketball(basketball, 0);
@@ -201,6 +260,8 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         basketball.selectAll('*').remove();
         drawBasketball(basketball, size);
+        
+        d.size = size;
       }, 1000);
       
       const row = rowAssignment[i];
@@ -208,11 +269,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const labelGroup = labelsLayer.append('g')
         .attr('class', 'player-label')
         .attr('data-index', i)
+        .attr('data-player', d["Player Name"])
         .attr('opacity', 0.9) 
         .attr('transform', () => {
-          const x = xScale(d["Total points"]);
-          const y = (row + 1) * (height / 5);
-          return `translate(${x}, ${y})`;
+          return `translate(${d.x}, ${d.y})`;
         });
         
       labelGroup.append('rect')
@@ -293,6 +353,136 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
     
+    let draggedPlayers = []; 
+    
+    function dragStarted(event, d) {
+      if (!d3.select('#dragModeToggle').property('checked')) return;
+      
+      d3.select(this).raise().classed('active', true);
+      d3.select(`[data-player="${d["Player Name"]}"].player-label`).raise();
+      
+      resetBtn.style('display', 'inline-block');
+    }
+    
+    function dragging(event, d) {
+      if (!d3.select('#dragModeToggle').property('checked')) return;
+      
+      d.x = event.x;
+      d.y = event.y;
+      
+      d3.select(this)
+        .attr('transform', `translate(${d.x}, ${d.y})`);
+      
+      d3.select(`[data-player="${d["Player Name"]}"].player-label`)
+        .attr('transform', `translate(${d.x}, ${d.y})`);
+      
+      if (!draggedPlayers.includes(d)) {
+        draggedPlayers.push(d);
+      }
+      
+      if (draggedPlayers.length >= 2) {
+        updateComparison();
+      }
+    }
+    
+    function dragEnded(event, d) {
+      if (!d3.select('#dragModeToggle').property('checked')) return;
+      
+      d3.select(this).classed('active', false);
+      
+      if (draggedPlayers.length >= 2) {
+        updateComparison();
+      }
+    }
+    
+    function updateComparison() {
+      if (draggedPlayers.length < 2) return;
+      
+      const svgRect = svg.node().getBoundingClientRect();
+      const midX = svgRect.x + svgRect.width / 2;
+      const topY = svgRect.y + 100; 
+      
+      let comparisonHTML = `<div class="comparison-header">Player Comparison</div><table class="comparison-table">`;
+      
+      comparisonHTML += `<tr><th></th>`;
+      draggedPlayers.forEach(p => {
+        comparisonHTML += `<th>${p["Player Name"]}</th>`;
+      });
+      comparisonHTML += `</tr>`;
+      
+      const statsToCompare = [
+        {label: "Total Points", key: "Total points"},
+        {label: "Games Played", key: "Games Played"},
+        {label: "Points Per Game", calculate: p => (p["Total points"] / p["Games Played"]).toFixed(1)}
+      ];
+      
+      statsToCompare.forEach(stat => {
+        comparisonHTML += `<tr><td>${stat.label}</td>`;
+        
+        draggedPlayers.forEach(p => {
+          let value = stat.calculate ? stat.calculate(p) : p[stat.key];
+          comparisonHTML += `<td>${value}</td>`;
+        });
+        
+        comparisonHTML += `</tr>`;
+      });
+      
+      comparisonHTML += `</table>`;
+      
+      comparisonTooltip.style('display', 'block')
+        .html(comparisonHTML)
+        .style('left', `${midX}px`)
+        .style('top', `${topY}px`);
+    }
+    
+    d3.select('#dragModeToggle').on('change', function() {
+      const isDragMode = d3.select(this).property('checked');
+      
+      if (isDragMode) {
+        playerGroups.call(drag);
+        instructionText.style('display', 'inline-block');
+        
+        basketballsLayer.selectAll('.basketball')
+          .style('cursor', 'grab')
+          .append('title').text('Drag to compare');
+          
+      } else {
+        playerGroups.on('.drag', null);
+        instructionText.style('display', 'none');
+        
+        comparisonTooltip.style('display', 'none');
+        
+        resetPositions();
+      }
+    });
+    
+    resetBtn.on('click', resetPositions);
+    
+    function resetPositions() {
+      draggedPlayers = [];
+      
+      comparisonTooltip.style('display', 'none');
+      
+      playerGroups.transition()
+        .duration(500)
+        .attr('transform', (d, i) => {
+          d.x = xScale(d.originalX);
+          d.y = (data[i].row + 1) * (height / 5);
+          return `translate(${d.x}, ${d.y})`;
+        });
+      
+      labelsLayer.selectAll('.player-label')
+        .transition()
+        .duration(500)
+        .attr('transform', function(d, i) {
+          const player = data.find(p => p["Player Name"] === d3.select(this).attr('data-player'));
+          return `translate(${player.x}, ${player.y})`;
+        });
+      
+      resetBtn.style('display', 'none');
+    }
+    
+    //legend stuff
     const legend = svg.append('g')
       .attr('class', 'legend')
       .attr('transform', `translate(${width - 200}, -50)`);
