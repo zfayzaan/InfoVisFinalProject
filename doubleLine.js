@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // subtitle for instructions
     vizCard.append('p')
       .attr('class', 'text-center mb-4 instruction-text')
-      .html('<i class="fas fa-info-circle me-1"></i>Hover over the dotted diagonal line to see correlation information');
+      .html('<i class="fas fa-info-circle me-1"></i>Hover over the dotted line to see correlation information');
     
     const chartContainer = vizCard.append('div')
       .attr('class', 'chart-container')
